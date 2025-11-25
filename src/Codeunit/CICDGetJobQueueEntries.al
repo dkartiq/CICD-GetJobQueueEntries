@@ -1,4 +1,4 @@
-codeunit 50000 "CICD-Get Job Queue Entries"
+codeunit 70019 "CICD-Get Job Queue Entries"
 {
     trigger OnRun()
     begin
