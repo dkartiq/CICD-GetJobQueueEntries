@@ -2,7 +2,7 @@
   "id": "e172fbec-3657-4002-acaf-08517025d572",
   "name": "CICD-Get Job Queue Entries",
   "publisher": "Satva Consulting LLP",
-  "version": "1.0.0.0",
+  "version": "1.0.0.3",
   "brief": "",
   "description": "",
   "privacyStatement": "",
@@ -16,8 +16,8 @@
   "application": "20.0.0.0",
   "idRanges": [
     {
-      "from": 70019,
-      "to": 70019
+      "from": 70005,
+      "to": 70005
     }
   ],
   "resourceExposurePolicy": {

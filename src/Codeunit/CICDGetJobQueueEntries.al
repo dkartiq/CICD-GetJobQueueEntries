@@ -1,12 +1,13 @@
-codeunit 70019 "CICD-Get Job Queue Entries"
+codeunit 70005 "CICD-Get Job Queue Entries"
 {
+    Access = Public;
     trigger OnRun()
     begin
 
     end;
 
     [ServiceEnabled]
-    procedure JobQueueJsonText(): Text
+    procedure jobQueueJsonText(): Text
     var
         Comp: Record Company;
         JobQueueEntry: Record "Job Queue Entry";
@@ -42,7 +43,7 @@ codeunit 70019 "CICD-Get Job Queue Entries"
     end;
 
     [ServiceEnabled]
-    procedure GetCurrentStatus(JsonText: Text): Text
+    procedure getCurrentStatus(JsonText: Text): Text
     var
         JobQueueEntry: Record "Job Queue Entry";
         CompName: Text;
@@ -55,36 +56,32 @@ codeunit 70019 "CICD-Get Job Queue Entries"
         JsonText1: Text;
     begin
         JsonObj.ReadFrom(JsonText);
-        // Get the array "data"
+
         if JsonObj.Get('data', JsonToken) then begin
-            JsonArray := JsonToken.AsArray();
+            JsonItem := JsonToken.AsObject();
 
-            foreach JsonToken in JsonArray do begin
-                JsonItem := JsonToken.AsObject();
+            JsonItem.Get('id', JsonToken);
+            JobID := JsonToken.AsValue().AsText();
 
-                JsonItem.Get('id', JsonToken);
-                JobID := JsonToken.AsValue().AsText();
+            JsonItem.Get('companyName', JsonToken);
+            CompName := JsonToken.AsValue().AsText();
 
-                JsonItem.Get('companyName', JsonToken);
-                CompName := JsonToken.AsValue().AsText();
-
-                JobQueueEntry.ChangeCompany(CompName);
-                if JobQueueEntry.Get() then begin
-                    Clear(JsonObj2);
-                    JsonObj2.Add('companyName', CompName);
-                    JsonObj2.Add('id', JobQueueEntry.ID);
-                    JsonObj2.Add('currentStatus', JobQueueEntry.Status);
-                    JsonArray.Add(JsonObj2);
-                end;
+            JobQueueEntry.ChangeCompany(CompName);
+            if JobQueueEntry.Get() then begin
+                Clear(JsonObj2);
+                JsonObj2.Add('companyName', CompName);
+                JsonObj2.Add('id', JobQueueEntry.ID);
+                JsonObj2.Add('currentStatus', JobQueueEntry.Status);
+                JsonArray.Add(JsonObj2);
             end;
-            DataJson.Add('data', JsonArray);
-            DataJson.WriteTo(JsonText1);
-            exit(JsonText1);
         end;
+        DataJson.Add('data', JsonArray);
+        DataJson.WriteTo(JsonText1);
+        exit(JsonText1);
     end;
 
     [ServiceEnabled]
-    procedure SetOriginalStatus(JsonText: Text)
+    procedure setOriginalStatus(JsonText: Text)
     var
         JobQueueEntry: Record "Job Queue Entry";
         JsonObj, JsonObj2 : JsonObject;
@@ -98,27 +95,28 @@ codeunit 70019 "CICD-Get Job Queue Entries"
         SessID: Integer;
     begin
         JsonObj.ReadFrom(JsonText);
-        // Get the array "data"
+
+        if not JsonObj.ReadFrom(JsonText) then
+            Error('Invalid JSON response');
+
+        // Get "data" token first
         if JsonObj.Get('data', JsonToken) then begin
-            JsonArray := JsonToken.AsArray();
+            // Convert token to JsonObject
+            JsonItem := JsonToken.AsObject();
 
-            foreach JsonToken in JsonArray do begin
-                JsonItem := JsonToken.AsObject();
+            JsonItem.Get('id', JsonToken);
+            JobID := JsonToken.AsValue().AsText();
 
-                JsonItem.Get('id', JsonToken);
-                JobID := JsonToken.AsValue().AsText();
+            JsonItem.Get('companyName', JsonToken);
+            CompName := JsonToken.AsValue().AsText();
 
-                JsonItem.Get('companyName', JsonToken);
-                CompName := JsonToken.AsValue().AsText();
+            JsonItem.Get('orginalStatus', JsonToken);
+            OriginalStatus := JsonToken.AsValue().AsInteger();
 
-                JsonItem.Get('orginalStatus', JsonToken);
-                OriginalStatus := JsonToken.AsValue().AsInteger();
-
-                JobQueueEntry.ChangeCompany(CompName);
-                if JobQueueEntry.Get(JobID) then begin
-                    JobQueueEntry.Status := OriginalStatus;
-                    StartSession(SessID, Codeunit::"Job Queue Management", CompName, JobQueueEntry);
-                end;
+            JobQueueEntry.ChangeCompany(CompName);
+            if JobQueueEntry.Get(JobID) then begin
+                JobQueueEntry.Status := OriginalStatus;
+                StartSession(SessID, Codeunit::"Job Queue Management", CompName, JobQueueEntry);
             end;
         end;
     end;
